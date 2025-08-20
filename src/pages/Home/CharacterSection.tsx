@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import {
   useCharacter,
   useCreateCharacter,
@@ -10,8 +9,10 @@ import Input from '@/ui/Input'
 import FormTitle from '@/ui/FormTitle'
 import SectionItem from '@/ui/SectionItem'
 import ActionButton from '@/ui/ActionButton'
+import { useEditableSection } from '@/hooks/useEditableSection'
 
-const FIELD_LABELS: Record<keyof Omit<Character, 'id' | 'account_id'>, string> = {
+const FIELDS = ['character_name', 'race', 'class'] as const
+const FIELD_LABELS: Record<typeof FIELDS[number], string> = {
   character_name: 'Name',
   race: 'Race',
   class: 'Class',
@@ -19,45 +20,33 @@ const FIELD_LABELS: Record<keyof Omit<Character, 'id' | 'account_id'>, string> =
 
 const CharacterSection = () => {
   const { data: character, isLoading } = useCharacter()
-  const updateCharacter = useUpdateCharacter()
   const createCharacter = useCreateCharacter()
+  const updateCharacter = useUpdateCharacter()
 
-  const [editMode, setEditMode] = useState(false)
-  const [localCharacter, setLocalCharacter] = useState<Omit<Character, 'id' | 'account_id'> | null>(
-    null
-  )
+  const {
+    localItem,
+    setLocalItem,
+    editMode,
+    setEditMode,
+    handleChange,
+    saveSingle,
+    cancelSingle,
+  } = useEditableSection<Character>({
+    data: character ?? null,
+    emptyItem: { character_name: '', race: '', class: '' },
+    stripKeys: ['id', 'account_id'],
+    createFn: (item) => createCharacter.mutateAsync(item as Omit<Character, 'id' | 'account_id'>),
+    updateFn: (id, item) => updateCharacter.mutateAsync({ id, ...(item as Omit<Character, 'id' | 'account_id'>) }),
+  })
 
   useEffect(() => {
-    if (character) {
-      const { id, account_id, ...rest } = character
-      setLocalCharacter(rest)
+    if (!character && !isLoading) {
+      setLocalItem({ character_name: '', race: '', class: '' })
+      setEditMode(true)
     }
-  }, [character])
+  }, [character, isLoading, setEditMode, setLocalItem])
 
-  if (isLoading || !localCharacter) return <p>Загрузка персонажа...</p>
-
-  const handleChange = (field: keyof typeof localCharacter, value: string) => {
-    if (!localCharacter) return
-    setLocalCharacter(prev => ({ ...prev!, [field]: value }))
-  }
-
-  const handleSave = async () => {
-    if (!localCharacter) return
-    if (character) {
-      await updateCharacter.mutateAsync({ id: character.id, ...localCharacter })
-    } else {
-      await createCharacter.mutateAsync(localCharacter)
-    }
-    setEditMode(false)
-  }
-
-  const handleCancel = () => {
-    if (character) {
-      const { id, account_id, ...rest } = character
-      setLocalCharacter(rest)
-      setEditMode(false)
-    }
-  }
+  if (isLoading) return <p className="text-gray-400 italic">Проверяем персонажа...</p>
 
   return (
     <div className="flex flex-col gap-3 rounded-md">
@@ -65,32 +54,34 @@ const CharacterSection = () => {
         <FormTitle>Main Info</FormTitle>
         {editMode ? (
           <div className="flex gap-2">
-            <ActionButton type="save" onClick={handleSave} />
-            <ActionButton type="cancel" onClick={handleCancel} />
+            <ActionButton type="save" onClick={saveSingle} />
+            <ActionButton type="cancel" onClick={cancelSingle} />
           </div>
         ) : (
           <ActionButton type="edit" onClick={() => setEditMode(true)} />
         )}
       </div>
 
-      {editMode ? (
+      {editMode && localItem ? (
         <div className="flex flex-col gap-4">
-          {(Object.keys(localCharacter) as (keyof typeof localCharacter)[]).map(field => (
+          {FIELDS.map((field) => (
             <Input
               key={field}
               label={FIELD_LABELS[field]}
-              value={localCharacter[field]}
-              onChange={e => handleChange(field, e.target.value)}
+              value={(localItem as any)[field] ?? ''}
+              onChange={(e) => handleChange(field, e.target.value)}
               placeholder={FIELD_LABELS[field]}
             />
           ))}
         </div>
-      ) : (
+      ) : character ? (
         <>
-          <SectionItem title="Имя:">{character?.character_name || ' '}</SectionItem>
-          <SectionItem title="Раса:">{character?.race || ' '}</SectionItem>
-          <SectionItem title="Класс:">{character?.class || ' '}</SectionItem>
+          <SectionItem title="Имя:">{character.character_name}</SectionItem>
+          <SectionItem title="Раса:">{character.race}</SectionItem>
+          <SectionItem title="Класс:">{character.class}</SectionItem>
         </>
+      ) : (
+        <p className="text-gray-400 italic">Персонаж ещё не создан</p>
       )}
     </div>
   )

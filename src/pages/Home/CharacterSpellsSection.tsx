@@ -1,5 +1,3 @@
-
-import { useState, useEffect } from 'react'
 import {
   useCharacterSpells,
   useCreateCharacterSpell,
@@ -13,6 +11,7 @@ import Checkbox from '@/ui/Checkbox'
 import FormTitle from '@/ui/FormTitle'
 import ActionButton from '@/ui/ActionButton'
 import SpellCard from '@/ui/SpellCard'
+import { useEditableSection } from '@/hooks/useEditableSection'
 
 const levelOptions = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
 const actionOptions = ['main', 'bonus']
@@ -23,36 +22,47 @@ const CharacterSpellsSection = () => {
   const updateSpell = useUpdateCharacterSpell()
   const deleteSpell = useDeleteCharacterSpell()
 
-  const [localSpells, setLocalSpells] = useState<Omit<CharacterSpell, 'id' | 'character_id'>[]>([])
-  const [editingIdx, setEditingIdx] = useState<number | null>(null)
-  const [newSpell, setNewSpell] = useState<Omit<CharacterSpell, 'id' | 'character_id'> | null>(null)
-
-  useEffect(() => {
-    setLocalSpells(spells.map(({ id, character_id, ...rest }) => ({ ...rest })))
-  }, [spells])
+  const {
+    localList,
+    setLocalList,
+    editingIdx,
+    setEditingIdx,
+    newItem,
+    setNewItem,
+    startAdd,
+    cancelAdd,
+    addNew,
+    saveExisting,
+    deleteExisting,
+  } = useEditableSection<CharacterSpell>({
+    data: spells,
+    emptyItem: {
+      name: '',
+      level: 0,
+      concentration: false,
+      action: 'main' as 'main' | 'bonus',
+      range: '',
+      duration: '',
+      description: '',
+    },
+    stripKeys: ['id', 'character_id'],
+    createFn: (item) => createSpell.mutateAsync(item as Omit<CharacterSpell, 'id' | 'character_id'>),
+    updateFn: (id, item) => updateSpell.mutateAsync({ id, ...(item as Omit<CharacterSpell, 'id' | 'character_id'>) }),
+    deleteFn: (id) => deleteSpell.mutateAsync(id),
+  })
 
   if (isLoading) return <p>Loading spells...</p>
 
   const handleAddNew = async () => {
-    if (!newSpell) return
-    await createSpell.mutateAsync(newSpell)
-    setNewSpell(null)
+    await addNew()
     await refetch()
   }
-
   const handleSaveExisting = async (idx: number) => {
-    const original = spells[idx]
-    if (!original) return
-    await updateSpell.mutateAsync({ id: original.id, ...localSpells[idx] })
-    setEditingIdx(null)
+    await saveExisting(idx)
     await refetch()
   }
-
   const handleDeleteExisting = async (idx: number) => {
-    const original = spells[idx]
-    if (!original) return
-    await deleteSpell.mutateAsync(original.id)
-    setEditingIdx(null)
+    await deleteExisting(idx)
     await refetch()
   }
 
@@ -60,150 +70,135 @@ const CharacterSpellsSection = () => {
     <div className="flex flex-col gap-3">
       <div className="flex justify-between items-center">
         <FormTitle>Spells</FormTitle>
-        <ActionButton
-          type="add"
-          onClick={() =>
-            setNewSpell({
-              name: '',
-              level: 0,
-              concentration: false,
-              action: 'main',
-              range: '',
-              duration: '',
-              description: '',
-            })
-          }
-        />
+        <ActionButton type="add" onClick={startAdd} />
       </div>
 
-      {/* Форма добавления нового заклинания */}
-      {newSpell && (
+      {newItem && (
         <div className="flex flex-col gap-2">
           <Input
             label="Name"
-            value={newSpell.name}
-            onChange={e => setNewSpell({ ...newSpell, name: e.target.value })}
+            value={(newItem as any).name}
+            onChange={e => setNewItem({ ...(newItem as any), name: e.target.value })}
           />
           <Select
             label="Level"
-            value={String(newSpell.level || 0)}
+            value={String((newItem as any).level || 0)}
             options={levelOptions}
-            onChange={val => setNewSpell({ ...newSpell, level: Number(val) })}
+            onChange={val => setNewItem({ ...(newItem as any), level: Number(val) })}
           />
           <Select
             label="Action Type"
-            value={newSpell.action || 'main'}
+            value={(newItem as any).action || 'main'}
             options={actionOptions}
-            onChange={val => setNewSpell({ ...newSpell, action: val as 'main' | 'bonus' })}
+            onChange={val => setNewItem({ ...(newItem as any), action: val as 'main' | 'bonus' })}
           />
           <Input
             label="Range"
-            value={newSpell.range || ''}
-            onChange={e => setNewSpell({ ...newSpell, range: e.target.value })}
+            value={(newItem as any).range || ''}
+            onChange={e => setNewItem({ ...(newItem as any), range: e.target.value })}
           />
           <Input
             label="Duration"
-            value={newSpell.duration || ''}
-            onChange={e => setNewSpell({ ...newSpell, duration: e.target.value })}
+            value={(newItem as any).duration || ''}
+            onChange={e => setNewItem({ ...(newItem as any), duration: e.target.value })}
           />
           <Input
             label="Description"
-            value={newSpell.description || ''}
-            onChange={e => setNewSpell({ ...newSpell, description: e.target.value })}
+            value={(newItem as any).description || ''}
+            onChange={e => setNewItem({ ...(newItem as any), description: e.target.value })}
           />
           <Checkbox
-            checked={newSpell.concentration || false}
-            onChange={val => setNewSpell({ ...newSpell, concentration: val })}
+            checked={(newItem as any).concentration || false}
+            onChange={val => setNewItem({ ...(newItem as any), concentration: val })}
             label="Concentration"
           />
           <div className="flex gap-2">
             <ActionButton type="save" onClick={handleAddNew} />
-            <ActionButton type="cancel" onClick={() => setNewSpell(null)} />
+            <ActionButton type="cancel" onClick={cancelAdd} />
           </div>
         </div>
       )}
 
-      {/* Список заклинаний */}
       <ul className="flex flex-col gap-2">
-        {localSpells.map((s, idx) => {
+        {localList.map((s, idx) => {
           const isEditing = editingIdx === idx
           return (
             <div key={idx} className="flex flex-col gap-2">
               {!isEditing ? (
                 <SpellCard
-                  name={s.name ?? ''}
-                  level={s.level ?? 0}
-                  action={s.action ?? ''}
-                  range={s.range ?? ''}
-                  duration={s.duration ?? ''}
-                  concentration={s.concentration ?? false}
-                  description={s.description ?? ''}
+                  name={(s as any).name ?? ''}
+                  level={(s as any).level ?? 0}
+                  action={(s as any).action ?? ''}
+                  range={(s as any).range ?? ''}
+                  duration={(s as any).duration ?? ''}
+                  concentration={(s as any).concentration ?? false}
+                  description={(s as any).description ?? ''}
                   onEdit={() => setEditingIdx(idx)}
                 />
               ) : (
                 <div className="flex flex-col gap-2">
                   <Input
                     label="Name"
-                    value={s.name}
+                    value={(s as any).name}
                     onChange={e => {
-                      const copy = [...localSpells]
-                      copy[idx].name = e.target.value
-                      setLocalSpells(copy)
+                      const copy = [...localList]
+                      ;(copy[idx] as any).name = e.target.value
+                      setLocalList(copy)
                     }}
                   />
                   <Select
                     label="Level"
-                    value={String(s.level || 0)}
+                    value={String((s as any).level || 0)}
                     options={levelOptions}
                     onChange={val => {
-                      const copy = [...localSpells]
-                      copy[idx].level = Number(val)
-                      setLocalSpells(copy)
+                      const copy = [...localList]
+                      ;(copy[idx] as any).level = Number(val)
+                      setLocalList(copy)
                     }}
                   />
                   <Select
                     label="Action Type"
-                    value={s.action || 'main'}
+                    value={(s as any).action || 'main'}
                     options={actionOptions}
                     onChange={val => {
-                      const copy = [...localSpells]
-                      copy[idx].action = val as 'main' | 'bonus'
-                      setLocalSpells(copy)
+                      const copy = [...localList]
+                      ;(copy[idx] as any).action = val as 'main' | 'bonus'
+                      setLocalList(copy)
                     }}
                   />
                   <Input
                     label="Range"
-                    value={s.range || ''}
+                    value={(s as any).range || ''}
                     onChange={e => {
-                      const copy = [...localSpells]
-                      copy[idx].range = e.target.value
-                      setLocalSpells(copy)
+                      const copy = [...localList]
+                      ;(copy[idx] as any).range = e.target.value
+                      setLocalList(copy)
                     }}
                   />
                   <Input
                     label="Duration"
-                    value={s.duration || ''}
+                    value={(s as any).duration || ''}
                     onChange={e => {
-                      const copy = [...localSpells]
-                      copy[idx].duration = e.target.value
-                      setLocalSpells(copy)
+                      const copy = [...localList]
+                      ;(copy[idx] as any).duration = e.target.value
+                      setLocalList(copy)
                     }}
                   />
                   <Input
                     label="Description"
-                    value={s.description || ''}
+                    value={(s as any).description || ''}
                     onChange={e => {
-                      const copy = [...localSpells]
-                      copy[idx].description = e.target.value
-                      setLocalSpells(copy)
+                      const copy = [...localList]
+                      ;(copy[idx] as any).description = e.target.value
+                      setLocalList(copy)
                     }}
                   />
                   <Checkbox
-                    checked={s.concentration || false}
+                    checked={(s as any).concentration || false}
                     onChange={val => {
-                      const copy = [...localSpells]
-                      copy[idx].concentration = val
-                      setLocalSpells(copy)
+                      const copy = [...localList]
+                      ;(copy[idx] as any).concentration = val
+                      setLocalList(copy)
                     }}
                     label="Concentration"
                   />

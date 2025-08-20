@@ -17,21 +17,22 @@ export const useCharacter = () => {
 
   return useQuery({
     queryKey: ["character", account?.id],
-    queryFn: async (): Promise<Character> => {
+    queryFn: async (): Promise<Character | null> => {
       if (!account) throw new Error("Нет аккаунта");
 
       const { data, error } = await supabase
         .from("characters")
         .select("*")
         .eq("account_id", account.id)
-        .single();
+        .maybeSingle(); // ✅ вместо single()
 
       if (error) throw error;
-      return data;
+      return data; // может быть null
     },
-    enabled: !!account, // запрос только если есть аккаунт
+    enabled: !!account,
   });
 };
+
 
 // --- Создание персонажа ---
 export const useCreateCharacter = () => {

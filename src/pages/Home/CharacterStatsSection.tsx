@@ -1,5 +1,3 @@
-
-import { useState, useEffect } from 'react'
 import {
   useCharacterStats,
   useCreateCharacterStats,
@@ -19,8 +17,19 @@ import {
   GiStarFormation,
 } from 'react-icons/gi'
 import ActionButton from '@/ui/ActionButton'
+import { useEditableSection } from '@/hooks/useEditableSection'
 
-const FIELD_LABELS: Record<keyof Omit<CharacterStat, 'id' | 'character_id'>, string> = {
+const FIELDS = [
+  'strength',
+  'dexterity',
+  'constitution',
+  'intelligence',
+  'wisdom',
+  'charisma',
+  'proficiency_bonus',
+] as const
+
+const FIELD_LABELS: Record<typeof FIELDS[number], string> = {
   strength: 'Сила',
   dexterity: 'Ловкость',
   constitution: 'Телосложение',
@@ -30,9 +39,7 @@ const FIELD_LABELS: Record<keyof Omit<CharacterStat, 'id' | 'character_id'>, str
   proficiency_bonus: 'Бонус мастерства',
 }
 
-const FIELD_ICONS: Partial<
-  Record<keyof Omit<CharacterStat, 'id' | 'character_id'>, React.ReactNode>
-> = {
+const FIELD_ICONS: Partial<Record<typeof FIELDS[number], React.ReactNode>> = {
   strength: <GiStrong />,
   dexterity: <GiRunningShoe />,
   constitution: <GiMuscleUp />,
@@ -43,43 +50,39 @@ const FIELD_ICONS: Partial<
 }
 
 const CharacterStatsSection = () => {
-  const { data: stats, isLoading } = useCharacterStats()
+  const { data: stats = null, isLoading } = useCharacterStats()
   const createStats = useCreateCharacterStats()
   const updateStats = useUpdateCharacterStats()
 
-  const [editMode, setEditMode] = useState(false)
-  const [localStats, setLocalStats] = useState<Omit<CharacterStat, 'id' | 'character_id'> | null>(null)
-
-  useEffect(() => {
-    if (stats) {
-      const { id, character_id, ...rest } = stats
-      setLocalStats(rest)
-    }
-  }, [stats])
-
-  if (isLoading || !localStats) return <p>Загрузка характеристик...</p>
-
-  const handleChange = (field: keyof typeof localStats, value: number) => {
-    setLocalStats(prev => ({ ...prev!, [field]: value }))
-  }
-
-  const handleSave = async () => {
-    if (!localStats) return
-    if (stats) {
-      await updateStats.mutateAsync({ id: stats.id, ...localStats })
-    } else {
-      await createStats.mutateAsync(localStats)
-    }
-    setEditMode(false)
-  }
-
-  const handleCancel = () => {
-    if (stats) {
-      const { id, character_id, ...rest } = stats
-      setLocalStats(rest)
-      setEditMode(false)
-    }
-  }
+  const {
+    localItem,
+    editMode,
+    setEditMode,
+    handleChange,
+    saveSingle,
+    cancelSingle,
+  } = useEditableSection<CharacterStat>({
+    data: stats ?? null,
+    emptyItem: {
+      strength: 0,
+      dexterity: 0,
+      constitution: 0,
+      intelligence: 0,
+      wisdom: 0,
+      charisma: 0,
+      proficiency_bonus: 0,
+    },
+    stripKeys: ['id', 'character_id'],
+    createFn: (item) =>
+      createStats.mutateAsync(
+        item as Omit<CharacterStat, 'id' | 'character_id'>
+      ),
+    updateFn: (id, item) =>
+      updateStats.mutateAsync({
+        id,
+        ...(item as Omit<CharacterStat, 'id' | 'character_id'>),
+      }),
+  })
 
   return (
     <div className="flex flex-col gap-3 mb-4">
@@ -87,33 +90,38 @@ const CharacterStatsSection = () => {
         <FormTitle>Stats</FormTitle>
         {editMode ? (
           <div className="flex gap-2">
-            <ActionButton type="save" onClick={handleSave} />
-            <ActionButton type="cancel" onClick={handleCancel} />
+            <ActionButton type="save" onClick={saveSingle} />
+            <ActionButton type="cancel" onClick={cancelSingle} />
           </div>
         ) : (
           <ActionButton type="edit" onClick={() => setEditMode(true)} />
         )}
       </div>
 
-      {editMode ? (
+      {isLoading ? (
+        <p>Загрузка характеристик...</p>
+      ) : editMode ? (
         <div className="flex flex-col gap-4 max-w-sm">
-          {(Object.keys(localStats) as (keyof typeof localStats)[]).map(field => (
+          {FIELDS.map((field) => (
             <Input
               key={field}
               label={FIELD_LABELS[field]}
               type="number"
-              value={localStats[field]}
-              onChange={e => handleChange(field, Number(e.target.value))}
+              value={(localItem as any)?.[field] ?? 0}
+              onChange={(e) => handleChange(field, Number(e.target.value))}
               placeholder={FIELD_LABELS[field]}
-              
             />
           ))}
         </div>
       ) : (
         <>
-          {(Object.keys(localStats) as (keyof typeof localStats)[]).map(field => (
-            <SectionItem key={field} title={`${FIELD_LABELS[field]}:`} icon={FIELD_ICONS[field]}>
-              {localStats[field]}
+          {FIELDS.map((field) => (
+            <SectionItem
+              key={field}
+              title={`${FIELD_LABELS[field]}:`}
+              icon={FIELD_ICONS[field]}
+            >
+              {(localItem as any)?.[field] ?? 0}
             </SectionItem>
           ))}
         </>

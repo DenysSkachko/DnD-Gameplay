@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react'
 import { useCharacterStats } from '@/queries/characterStatsQueries'
 import {
   useCharacterSavingThrows,
@@ -7,11 +6,13 @@ import {
   type CharacterSavingThrow,
 } from '@/queries/characterSavingThrowsQueries'
 import SectionItem from '@/ui/SectionItem'
-import ButtonEdit from '@/ui/ActionButton'
+import ActionButton from '@/ui/ActionButton'
 import Checkbox from '@/ui/Checkbox'
 import FormTitle from '@/ui/FormTitle'
+import { useEditableSection } from '@/hooks/useEditableSection'
 
-const FIELD_LABELS: Record<keyof Omit<CharacterSavingThrow, 'id' | 'character_id'>, string> = {
+const FIELDS = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'] as const
+const FIELD_LABELS: Record<typeof FIELDS[number], string> = {
   strength: 'Сила',
   dexterity: 'Ловкость',
   constitution: 'Телосложение',
@@ -27,76 +28,66 @@ const CharacterSavingThrowsSection = () => {
   const createSavingThrows = useCreateCharacterSavingThrows()
   const updateSavingThrows = useUpdateCharacterSavingThrows()
 
-  const [editMode, setEditMode] = useState(false)
-  const [localThrows, setLocalThrows] = useState<Omit<CharacterSavingThrow, 'id' | 'character_id'>>(
-    {
+  const {
+    localItem,
+    editMode,
+    setEditMode,
+    handleChange,
+    saveSingle,
+    cancelSingle,
+  } = useEditableSection<CharacterSavingThrow>({
+    data: savingThrows ?? null,
+    emptyItem: {
       strength: false,
       dexterity: false,
       constitution: false,
       intelligence: false,
       wisdom: false,
       charisma: false,
-    }
-  )
+    },
+    stripKeys: ['id', 'character_id'],
+    createFn: (item) =>
+      createSavingThrows.mutateAsync(item as Omit<CharacterSavingThrow, 'id' | 'character_id'>),
+    updateFn: (id, item) =>
+      updateSavingThrows.mutateAsync({
+        id,
+        ...(item as Omit<CharacterSavingThrow, 'id' | 'character_id'>),
+      }),
+  })
 
-  useEffect(() => {
-    if (savingThrows) {
-      const { id, character_id, ...rest } = savingThrows
-      setLocalThrows(rest)
-    }
-  }, [savingThrows])
-
-  const computeValue = (key: keyof typeof localThrows) => {
+  const computeValue = (key: typeof FIELDS[number]) => {
     if (!stats) return 0
-    const statValue = stats[key as keyof typeof stats] as number
-    const bonus = stats.proficiency_bonus || 0
-    return localThrows[key] ? statValue + bonus : statValue
-  }
-
-  const handleSave = async () => {
-    if (!savingThrows) {
-      await createSavingThrows.mutateAsync(localThrows)
-    } else {
-      await updateSavingThrows.mutateAsync({ id: savingThrows.id, ...localThrows })
-    }
-    setEditMode(false)
+    const statValue = (stats as any)[key] as number
+    const bonus = (stats as any).proficiency_bonus || 0
+    return (localItem as any)?.[key] ? statValue + bonus : statValue
   }
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex justify-between items-center">
         <FormTitle>Saving Throws</FormTitle>
-
         {editMode ? (
           <div className="flex gap-2 mt-2">
-            <ButtonEdit type="save" onClick={handleSave} />
-            <ButtonEdit type="cancel" onClick={() => setEditMode(false)} />
+            <ActionButton type="save" onClick={saveSingle} />
+            <ActionButton type="cancel" onClick={cancelSingle} />
           </div>
         ) : (
-          <ButtonEdit type="edit" onClick={() => setEditMode(true)} />
+          <ActionButton type="edit" onClick={() => setEditMode(true)} />
         )}
       </div>
 
-      {Object.keys(localThrows).map(key => {
-        const k = key as keyof typeof localThrows
-        return (
-          <SectionItem key={k} title={FIELD_LABELS[k]}>
-            {!editMode ? (
-              computeValue(k)
-            ) : (
-              <Checkbox
-                checked={localThrows[k]}
-                onChange={val =>
-                  setLocalThrows({
-                    ...localThrows,
-                    [k]: val,
-                  })
-                }
-              />
-            )}
-          </SectionItem>
-        )
-      })}
+      {FIELDS.map((k) => (
+        <SectionItem key={k} title={FIELD_LABELS[k]}>
+          {!editMode ? (
+            computeValue(k)
+          ) : (
+            <Checkbox
+              checked={(localItem as any)?.[k] ?? false}
+              onChange={(val) => handleChange(k, val)}
+            />
+          )}
+        </SectionItem>
+      ))}
     </div>
   )
 }

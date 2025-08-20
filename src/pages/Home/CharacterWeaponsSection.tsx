@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react'
 import {
   useCharacterWeapons,
   useCreateWeapon,
@@ -13,6 +12,7 @@ import ActionButton from '@/ui/ActionButton'
 import Select from '@/ui/Select'
 import Checkbox from '@/ui/Checkbox'
 import WeaponCard from '@/ui/WeaponCard'
+import { useEditableSection } from '@/hooks/useEditableSection'
 
 const diceOptions = ['d4', 'd6', 'd8', 'd10']
 
@@ -23,187 +23,176 @@ const CharacterWeaponsSection = () => {
   const updateWeapon = useUpdateWeapon()
   const deleteWeapon = useDeleteWeapon()
 
-  const [localWeapons, setLocalWeapons] = useState<
-    Omit<CharacterWeapon, 'id' | 'character_id' | 'attack_bonus' | 'damage'>[]
-  >([])
-  const [editingIdx, setEditingIdx] = useState<number | null>(null)
-  const [newWeapon, setNewWeapon] = useState<Omit<
-    CharacterWeapon,
-    'id' | 'character_id' | 'attack_bonus' | 'damage'
-  > | null>(null)
+  const {
+    localList,
+    setLocalList,
+    editingIdx,
+    setEditingIdx,
+    newItem,
+    startAdd,
+    cancelAdd,
+    addNew,
+    saveExisting,
+    deleteExisting,
+  } = useEditableSection<CharacterWeapon>({
+    data: weapons,
+    emptyItem: {
+      name: '',
+      damage_dice: '',
+      damage_stat: '',
+      extra_damage: 0,
+      use_proficiency: false,
+    },
+    stripKeys: ['id', 'character_id'],
+    createFn: item =>
+      createWeapon.mutateAsync(
+        item as Omit<CharacterWeapon, 'id' | 'character_id' | 'attack_bonus' | 'damage'>
+      ),
+    updateFn: (id, item) =>
+      updateWeapon.mutateAsync({
+        id,
+        ...(item as Omit<CharacterWeapon, 'id' | 'character_id' | 'attack_bonus' | 'damage'>),
+      }),
+    deleteFn: id => deleteWeapon.mutateAsync(id),
+  })
 
-  useEffect(() => {
-    if (weapons.length && localWeapons.length === 0) {
-      setLocalWeapons(weapons.map(({ id, character_id, ...rest }) => ({ ...rest })))
-    }
-  }, [weapons])
+  if (isLoading) return <p>Loading weapons...</p>
 
-  if (isLoading || !stats) return <p>Loading weapons...</p>
-
-  const statOptions = Object.keys(stats).filter(
-    k => k !== 'id' && k !== 'character_id' && k !== 'proficiency_bonus'
-  )
+  const statOptions = stats
+    ? Object.keys(stats).filter(
+        k => k !== 'id' && k !== 'character_id' && k !== 'proficiency_bonus'
+      )
+    : []
 
   const calcDamageAndAttack = (
     w: Omit<CharacterWeapon, 'id' | 'character_id' | 'attack_bonus' | 'damage'>
   ) => {
     if (!w.damage_dice || !w.damage_stat) return { damage: '-', attack_bonus: 0 }
-    const statValue = Number(stats[w.damage_stat as keyof CharacterStat] || 0)
+    const statValue = Number((stats as any)[w.damage_stat as keyof CharacterStat] || 0)
     const damageStr = `${w.damage_dice} + ${statValue}${
       w.extra_damage ? ` + ${w.extra_damage}` : ''
     }`
-    const attackBonus = statValue + (w.use_proficiency ? Number(stats.proficiency_bonus || 0) : 0)
+    const attackBonus =
+      statValue + (w.use_proficiency ? Number((stats as any).proficiency_bonus || 0) : 0)
     return { damage: damageStr, attack_bonus: attackBonus }
   }
 
-  const handleSaveExisting = async (idx: number) => {
-    const original = weapons[idx]
-    if (original) {
-      await updateWeapon.mutateAsync({ id: original.id, ...localWeapons[idx] })
-      setLocalWeapons(prev => {
-        const copy = [...prev]
-        copy[idx] = { ...copy[idx] }
-        return copy
-      })
-    }
-    setEditingIdx(null)
+  const handleAddNew = async () => {
+    await addNew()
   }
-
+  const handleSaveExisting = async (idx: number) => {
+    await saveExisting(idx)
+  }
   const handleDeleteExisting = async (idx: number) => {
-    const original = weapons[idx]
-    if (original) await deleteWeapon.mutateAsync(original.id)
-    setEditingIdx(null)
-    setLocalWeapons(prev => prev.filter((_, i) => i !== idx))
+    await deleteExisting(idx)
   }
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex justify-between items-center">
         <FormTitle>Weapons</FormTitle>
-        <ActionButton
-          type="add"
-          onClick={() =>
-            setNewWeapon({
-              name: '',
-              damage_dice: '',
-              damage_stat: '',
-              extra_damage: 0,
-              use_proficiency: false,
-            })
-          }
-        />
+        <ActionButton type="add" onClick={startAdd} />
       </div>
 
-      {newWeapon && (
+      {newItem && (
         <div className="flex flex-col gap-2 border p-3 rounded-md">
           <Input
             label="Name"
-            value={newWeapon.name}
-            onChange={e => setNewWeapon({ ...newWeapon, name: e.target.value })}
+            value={(newItem as any).name}
+            onChange={e => Object.assign(newItem, { name: e.target.value })}
           />
           <Select
             label="Damage Dice"
-            value={newWeapon.damage_dice}
+            value={(newItem as any).damage_dice}
             options={diceOptions}
-            onChange={val => setNewWeapon({ ...newWeapon, damage_dice: val })}
+            onChange={val => Object.assign(newItem, { damage_dice: val })}
           />
           <Select
             label="Damage Stat"
-            value={newWeapon.damage_stat}
+            value={(newItem as any).damage_stat}
             options={statOptions}
-            onChange={val => setNewWeapon({ ...newWeapon, damage_stat: val })}
+            onChange={val => Object.assign(newItem, { damage_stat: val })}
           />
           <Input
             label="Extra Damage"
             type="number"
-            value={newWeapon.extra_damage}
-            onChange={e => setNewWeapon({ ...newWeapon, extra_damage: Number(e.target.value) })}
+            value={(newItem as any).extra_damage}
+            onChange={e => Object.assign(newItem, { extra_damage: Number(e.target.value) })}
           />
           <Checkbox
-            checked={newWeapon.use_proficiency}
-            onChange={val => setNewWeapon({ ...newWeapon, use_proficiency: val })}
+            checked={(newItem as any).use_proficiency}
+            onChange={val => Object.assign(newItem, { use_proficiency: val })}
             label="Add proficiency bonus"
           />
           <div className="flex gap-2">
-            <ActionButton
-              type="save"
-              onClick={async () => {
-                if (newWeapon) {
-                  await createWeapon.mutateAsync(newWeapon)
-                  setLocalWeapons(prev => [...prev, newWeapon])
-                  setNewWeapon(null)
-                }
-              }}
-            />
-            <ActionButton type="cancel" onClick={() => setNewWeapon(null)} />
+            <ActionButton type="save" onClick={handleAddNew} />
+            <ActionButton type="cancel" onClick={cancelAdd} />
           </div>
         </div>
       )}
 
       <ul className="flex flex-col gap-2">
-        {localWeapons.map((w, idx) => {
+        {localList.map((w, idx) => {
           const isEditing = editingIdx === idx
-          const { damage, attack_bonus } = calcDamageAndAttack(w)
+          const { damage, attack_bonus } = calcDamageAndAttack(w as any)
           return (
             <div key={idx} className="flex flex-col gap-2">
               {!isEditing ? (
-                <div
-                  className="flex justify-between items-center relative"
-                  onClick={() => setEditingIdx(idx)}
-                >
+                <div className="flex justify-between items-center relative">
                   <WeaponCard
-                    name={w.name}
+                    name={(w as any).name}
                     damage={damage}
                     attack_bonus={attack_bonus}
-                  ></WeaponCard>
+                    onEdit={() => setEditingIdx(idx)}
+                  />
                 </div>
               ) : (
                 <div className="flex flex-col gap-2">
                   <Input
                     label="Name"
-                    value={w.name}
+                    value={(w as any).name}
                     onChange={e => {
-                      const copy = [...localWeapons]
-                      copy[idx].name = e.target.value
-                      setLocalWeapons(copy)
+                      const copy = [...localList]
+                      ;(copy[idx] as any).name = e.target.value
+                      setLocalList(copy)
                     }}
                   />
                   <Select
                     label="Damage Dice"
-                    value={w.damage_dice}
+                    value={(w as any).damage_dice}
                     options={diceOptions}
                     onChange={val => {
-                      const copy = [...localWeapons]
-                      copy[idx].damage_dice = val
-                      setLocalWeapons(copy)
+                      const copy = [...localList]
+                      ;(copy[idx] as any).damage_dice = val
+                      setLocalList(copy)
                     }}
                   />
                   <Select
                     label="Damage Stat"
-                    value={w.damage_stat}
+                    value={(w as any).damage_stat}
                     options={statOptions}
                     onChange={val => {
-                      const copy = [...localWeapons]
-                      copy[idx].damage_stat = val
-                      setLocalWeapons(copy)
+                      const copy = [...localList]
+                      ;(copy[idx] as any).damage_stat = val
+                      setLocalList(copy)
                     }}
                   />
                   <Input
                     label="Extra Damage"
                     type="number"
-                    value={w.extra_damage}
+                    value={(w as any).extra_damage}
                     onChange={e => {
-                      const copy = [...localWeapons]
-                      copy[idx].extra_damage = Number(e.target.value)
-                      setLocalWeapons(copy)
+                      const copy = [...localList]
+                      ;(copy[idx] as any).extra_damage = Number(e.target.value)
+                      setLocalList(copy)
                     }}
                   />
                   <Checkbox
-                    checked={w.use_proficiency}
+                    checked={(w as any).use_proficiency}
                     onChange={val => {
-                      const copy = [...localWeapons]
-                      copy[idx].use_proficiency = val
-                      setLocalWeapons(copy)
+                      const copy = [...localList]
+                      ;(copy[idx] as any).use_proficiency = val
+                      setLocalList(copy)
                     }}
                     label="Add proficiency bonus"
                   />

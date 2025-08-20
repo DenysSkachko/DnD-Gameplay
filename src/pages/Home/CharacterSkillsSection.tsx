@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react'
 import { useCharacterStats } from '@/queries/characterStatsQueries'
 import {
   useCharacterSkills,
@@ -10,20 +9,14 @@ import SectionItem from '@/ui/SectionItem'
 import FormTitle from '@/ui/FormTitle'
 import ActionButton from '@/ui/ActionButton'
 import Checkbox from '@/ui/Checkbox'
+import { useEditableSection } from '@/hooks/useEditableSection'
+
+type SkillKey = keyof Omit<CharacterSkills, 'id' | 'character_id'>
 
 type SkillMeta = {
-  key: keyof Omit<CharacterSkills, 'id' | 'character_id'>
+  key: SkillKey
   label: string
-  attribute: keyof typeof statsDefaults
-}
-
-const statsDefaults = {
-  strength: 0,
-  dexterity: 0,
-  intelligence: 0,
-  wisdom: 0,
-  charisma: 0,
-  proficiency_bonus: 0,
+  attribute: 'strength' | 'dexterity' | 'intelligence' | 'wisdom' | 'charisma'
 }
 
 const skillList: SkillMeta[] = [
@@ -53,47 +46,45 @@ const CharacterSkillsSection = () => {
   const createSkills = useCreateCharacterSkills()
   const updateSkills = useUpdateCharacterSkills()
 
-  const [editMode, setEditMode] = useState(false)
-  const [localSkills, setLocalSkills] = useState<Omit<CharacterSkills, 'id' | 'character_id'>>(
-    {} as any
-  )
+  const {
+    localItem,
+    editMode,
+    setEditMode,
+    handleChange,
+    saveSingle,
+    cancelSingle,
+  } = useEditableSection<CharacterSkills>({
+    data: skills ?? null,
+    emptyItem: Object.fromEntries(
+      skillList.map((s) => [s.key, false])
+    ) as Partial<CharacterSkills>,
+    stripKeys: ['id', 'character_id'],
+    createFn: (item) =>
+      createSkills.mutateAsync(
+        item as Omit<CharacterSkills, 'id' | 'character_id'>
+      ),
+    updateFn: (id, item) =>
+      updateSkills.mutateAsync({
+        id,
+        ...(item as Omit<CharacterSkills, 'id' | 'character_id'>),
+      }),
+  })
 
-  useEffect(() => {
-    if (skills) {
-      const { id, character_id, ...rest } = skills
-      setLocalSkills(rest)
-    } else {
-      const emptySkills: any = {}
-      skillList.forEach(s => (emptySkills[s.key] = false))
-      setLocalSkills(emptySkills)
-    }
-  }, [skills])
-
-  const computeValue = (key: keyof typeof localSkills, attr: keyof typeof statsDefaults) => {
+  const computeValue = (key: SkillKey, attr: SkillMeta['attribute']) => {
     if (!stats) return 0
-    const base = stats[attr] || 0
-    const bonus = stats.proficiency_bonus || 0
-    return localSkills[key] ? base + bonus : base
-  }
-
-  const handleSave = async () => {
-    if (!skills) {
-      await createSkills.mutateAsync(localSkills)
-    } else {
-      await updateSkills.mutateAsync({ id: skills.id, ...localSkills })
-    }
-    setEditMode(false)
+    const base = (stats as any)[attr] || 0
+    const bonus = (stats as any).proficiency_bonus || 0
+    return (localItem as any)?.[key] ? base + bonus : base
   }
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex justify-between items-center">
         <FormTitle>Навыки</FormTitle>
-
         {editMode ? (
           <div className="flex gap-2 mt-2">
-            <ActionButton type="save" onClick={handleSave} />
-            <ActionButton type="cancel" onClick={() => setEditMode(false)} />
+            <ActionButton type="save" onClick={saveSingle} />
+            <ActionButton type="cancel" onClick={cancelSingle} />
           </div>
         ) : (
           <ActionButton type="edit" onClick={() => setEditMode(true)} />
@@ -101,19 +92,14 @@ const CharacterSkillsSection = () => {
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        {skillList.map(s => (
+        {skillList.map((s) => (
           <SectionItem key={s.key} title={s.label}>
             {!editMode ? (
               computeValue(s.key, s.attribute)
             ) : (
               <Checkbox
-                checked={localSkills[s.key]}
-                onChange={val =>
-                  setLocalSkills({
-                    ...localSkills,
-                    [s.key]: val,
-                  })
-                }
+                checked={(localItem as any)?.[s.key] ?? false}
+                onChange={(val) => handleChange(s.key, val)}
               />
             )}
           </SectionItem>
