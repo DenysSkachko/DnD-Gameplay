@@ -11,7 +11,15 @@ import Checkbox from '@/ui/Checkbox'
 import SectionItem from '@/ui/SectionItem'
 import { useEditableSection } from '@/hooks/useEditableSection'
 
-const FIELDS = ['current_hp', 'max_hp', 'armor_class', 'speed', 'initiative'] as const
+const FIELD_LABELS: Record<string, string> = {
+  current_hp: 'Current HP',
+  max_hp: 'Max HP',
+  armor_class: 'Armor Class',
+  speed: 'Speed',
+  initiative: 'Initiative',
+}
+
+const FIELDS = Object.keys(FIELD_LABELS) as (keyof CharacterCombat)[]
 
 const CharacterCombatSection = () => {
   const { data: combat = null, isLoading } = useCharacterCombat()
@@ -28,11 +36,11 @@ const CharacterCombatSection = () => {
   } = useEditableSection<CharacterCombat>({
     data: combat ?? null,
     emptyItem: {
-      current_hp: 0,
-      max_hp: 0,
-      armor_class: 0,
-      speed: 0,
-      initiative: 0,
+      current_hp: null,
+      max_hp: null,
+      armor_class: null,
+      speed: null,
+      initiative: null,
       inspiration: false,
     },
     stripKeys: ['id', 'character_id'],
@@ -69,9 +77,11 @@ const CharacterCombatSection = () => {
             <Input
               key={f}
               type="number"
-              value={(localItem as any)?.[f] ?? 0}
-              onChange={(e) => handleChange(f, Number(e.target.value))}
-              label={f.replace('_', ' ').replace(/\b\w/g, (s) => s.toUpperCase())}
+              value={(localItem as any)?.[f] ?? ''}
+              onChange={(e) =>
+                handleChange(f, e.target.value === '' ? null : Number(e.target.value))
+              }
+              label={FIELD_LABELS[f]}
             />
           ))}
           <Checkbox
@@ -83,16 +93,16 @@ const CharacterCombatSection = () => {
       ) : (
         <div className="flex flex-col gap-2">
           <SectionItem title="Current HP / Max HP">
-            {(localItem as any)?.current_hp ?? 0} / {(localItem as any)?.max_hp ?? 0}
+            {(localItem as any)?.current_hp ?? '-'} / {(localItem as any)?.max_hp ?? '-'}
           </SectionItem>
           <SectionItem title="Armor Class">
-            {(localItem as any)?.armor_class ?? 0}
+            {(localItem as any)?.armor_class ?? '-'}
           </SectionItem>
           <SectionItem title="Speed">
-            {(localItem as any)?.speed ?? 0}
+            {(localItem as any)?.speed ?? '-'}
           </SectionItem>
           <SectionItem title="Initiative">
-            {(localItem as any)?.initiative ?? 0}
+            {(localItem as any)?.initiative ?? '-'}
           </SectionItem>
           <SectionItem title="Inspiration">
             {(localItem as any)?.inspiration ? 'Yes' : 'No'}
