@@ -8,7 +8,6 @@ import Input from '@/ui/Input'
 import FormTitle from '@/ui/FormTitle'
 import ActionButton from '@/ui/ActionButton'
 import Checkbox from '@/ui/Checkbox'
-import { Link } from 'react-router-dom'
 import SectionItem from '@/ui/SectionItem'
 
 const CharacterCombatSection = () => {
