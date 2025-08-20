@@ -29,7 +29,7 @@ const FIELDS = [
   'proficiency_bonus',
 ] as const
 
-const FIELD_LABELS: Record<typeof FIELDS[number], string> = {
+const FIELD_LABELS: Record<(typeof FIELDS)[number], string> = {
   strength: 'Сила',
   dexterity: 'Ловкость',
   constitution: 'Телосложение',
@@ -39,7 +39,7 @@ const FIELD_LABELS: Record<typeof FIELDS[number], string> = {
   proficiency_bonus: 'Бонус мастерства',
 }
 
-const FIELD_ICONS: Partial<Record<typeof FIELDS[number], React.ReactNode>> = {
+const FIELD_ICONS: Partial<Record<(typeof FIELDS)[number], React.ReactNode>> = {
   strength: <GiStrong />,
   dexterity: <GiRunningShoe />,
   constitution: <GiMuscleUp />,
@@ -54,35 +54,26 @@ const CharacterStatsSection = () => {
   const createStats = useCreateCharacterStats()
   const updateStats = useUpdateCharacterStats()
 
-  const {
-    localItem,
-    editMode,
-    setEditMode,
-    handleChange,
-    saveSingle,
-    cancelSingle,
-  } = useEditableSection<CharacterStat>({
-    data: stats ?? null,
-    emptyItem: {
-      strength: 0,
-      dexterity: 0,
-      constitution: 0,
-      intelligence: 0,
-      wisdom: 0,
-      charisma: 0,
-      proficiency_bonus: 0,
-    },
-    stripKeys: ['id', 'character_id'],
-    createFn: (item) =>
-      createStats.mutateAsync(
-        item as Omit<CharacterStat, 'id' | 'character_id'>
-      ),
-    updateFn: (id, item) =>
-      updateStats.mutateAsync({
-        id,
-        ...(item as Omit<CharacterStat, 'id' | 'character_id'>),
-      }),
-  })
+  const { localItem, editMode, setEditMode, handleChange, saveSingle, cancelSingle } =
+    useEditableSection<CharacterStat>({
+      data: stats ?? null,
+      emptyItem: {
+        strength: null,
+        dexterity: null,
+        constitution: null,
+        intelligence: null,
+        wisdom: null,
+        charisma: null,
+        proficiency_bonus: null,
+      },
+      stripKeys: ['id', 'character_id'],
+      createFn: item => createStats.mutateAsync(item as Omit<CharacterStat, 'id' | 'character_id'>),
+      updateFn: (id, item) =>
+        updateStats.mutateAsync({
+          id,
+          ...(item as Omit<CharacterStat, 'id' | 'character_id'>),
+        }),
+    })
 
   return (
     <div className="flex flex-col gap-3 mb-4">
@@ -102,25 +93,24 @@ const CharacterStatsSection = () => {
         <p>Загрузка характеристик...</p>
       ) : editMode ? (
         <div className="flex flex-col gap-4 max-w-sm">
-          {FIELDS.map((field) => (
+          {FIELDS.map(field => (
             <Input
               key={field}
               label={FIELD_LABELS[field]}
               type="number"
-              value={(localItem as any)?.[field] ?? 0}
-              onChange={(e) => handleChange(field, Number(e.target.value))}
+              value={(localItem as any)?.[field] ?? ''} // ← пустое значение если null
+              onChange={e => {
+                const val = e.target.value
+                handleChange(field, val === '' ? null : Number(val)) // ← пустая строка → null
+              }}
               placeholder={FIELD_LABELS[field]}
             />
           ))}
         </div>
       ) : (
         <>
-          {FIELDS.map((field) => (
-            <SectionItem
-              key={field}
-              title={`${FIELD_LABELS[field]}:`}
-              icon={FIELD_ICONS[field]}
-            >
+          {FIELDS.map(field => (
+            <SectionItem key={field} title={`${FIELD_LABELS[field]}:`} icon={FIELD_ICONS[field]}>
               {(localItem as any)?.[field] ?? 0}
             </SectionItem>
           ))}

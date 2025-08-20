@@ -9,7 +9,7 @@ export type CharacterInventory = {
   item_name: string;
   quantity: number | null;
   description: string | null;
-  gold: number;
+  gold: number | null;
 };
 
 // --- Получение инвентаря персонажа ---

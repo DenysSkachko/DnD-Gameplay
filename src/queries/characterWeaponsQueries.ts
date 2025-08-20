@@ -8,7 +8,7 @@ export type CharacterWeapon = {
   name: string;
   damage_dice: string;        
   damage_stat: string;        
-  extra_damage: number;
+  extra_damage: number | null;
   use_proficiency: boolean;
 };
 

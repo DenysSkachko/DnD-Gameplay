@@ -30,7 +30,7 @@ const CharacterInventorySection = () => {
     deleteExisting,
   } = useEditableSection<CharacterInventory>({
     data: inventory,
-    emptyItem: { item_name: '', quantity: 1, description: '', gold: 0 },
+    emptyItem: { item_name: '', quantity: null, description: '', gold: null },
     stripKeys: ['id', 'character_id'],
     createFn: (item) => createItem.mutateAsync(item as Omit<CharacterInventory, 'id' | 'character_id'>),
     updateFn: (id, item) => updateItem.mutateAsync({ id, ...(item as Omit<CharacterInventory, 'id' | 'character_id'>) }),

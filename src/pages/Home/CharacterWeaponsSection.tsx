@@ -40,7 +40,7 @@ const CharacterWeaponsSection = () => {
       name: '',
       damage_dice: '',
       damage_stat: '',
-      extra_damage: 0,
+      extra_damage: null,
       use_proficiency: false,
     },
     stripKeys: ['id', 'character_id'],
