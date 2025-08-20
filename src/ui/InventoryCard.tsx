@@ -10,12 +10,11 @@ type Props = {
 }
 
 const InventoryCard = ({ name, quantity = 1, gold = 0, description, onEdit }: Props) => {
-  const [open, setOpen] = useState(false)
 
   return (
     <div
       className="flex flex-col px-5 py-3 rounded-lg bg-dark-hover w-full cursor-pointer"
-      onClick={() => description && setOpen(!open)}
+      onClick={onEdit}
     >
       {/* Основная строка с именем, количеством и золотом */}
       <div className="flex justify-between items-center w-full">
@@ -27,14 +26,9 @@ const InventoryCard = ({ name, quantity = 1, gold = 0, description, onEdit }: Pr
         </div>
       </div>
 
-      {description && open && (
+      {description && (
         <div className="mt-2 flex gap-3 items-end text-gray-300 text-sm relative">
           <p className="pr-12 break-words max-w-70">{description}</p>
-          {onEdit && (
-            <div className="absolute right-0 bottom-0">
-              <ActionButton type="edit" onClick={onEdit} />
-            </div>
-          )}
         </div>
       )}
     </div>

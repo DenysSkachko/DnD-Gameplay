@@ -35,7 +35,7 @@ const Select: React.FC<SelectProps> = ({ value, options, onChange, label, classN
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full bg-accent text-light border border-gray-600 rounded-lg px-5 py-3 flex justify-between items-center font-bold text-xl focus:outline-none"
+        className="w-full text-light border border-gray-600 rounded-lg px-5 py-3 flex justify-between items-center font-bold text-xl focus:outline-none"
       >
         <span>{value || "Select..."}</span>
         <svg
@@ -50,7 +50,7 @@ const Select: React.FC<SelectProps> = ({ value, options, onChange, label, classN
       </button>
 
       {isOpen && (
-        <ul className="absolute z-50 mt-1 w-full bg-accent border border-gray-600 rounded-lg max-h-60 overflow-auto shadow-lg">
+        <ul className="absolute z-50 mt-1 w-full bg-dark border border-gray-600 rounded-lg max-h-60 overflow-auto shadow-lg">
           {options.map((opt) => (
             <li
               key={opt}

@@ -130,7 +130,7 @@ const CharacterWeaponsSection = () => {
               onClick={async () => {
                 if (newWeapon) {
                   await createWeapon.mutateAsync(newWeapon)
-                  setLocalWeapons(prev => [...prev, newWeapon]) 
+                  setLocalWeapons(prev => [...prev, newWeapon])
                   setNewWeapon(null)
                 }
               }}
@@ -147,17 +147,15 @@ const CharacterWeaponsSection = () => {
           return (
             <div key={idx} className="flex flex-col gap-2">
               {!isEditing ? (
-                <div className="flex justify-between items-center relative">
+                <div
+                  className="flex justify-between items-center relative"
+                  onClick={() => setEditingIdx(idx)}
+                >
                   <WeaponCard
                     name={w.name}
                     damage={damage}
                     attack_bonus={attack_bonus}
                   ></WeaponCard>
-                  <ActionButton
-                    type="edit"
-                    onClick={() => setEditingIdx(idx)}
-                    className="absolute right-4 top-5"
-                  />
                 </div>
               ) : (
                 <div className="flex flex-col gap-2">
