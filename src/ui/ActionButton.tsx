@@ -27,7 +27,7 @@ const ActionButton = ({ type, onClick, className = "" }: ActionButtonProps) => {
     <button
       type="button"
       onClick={onClick}
-      className={`text-2xl text-accent  rounded-md flex items-center justify-center cursor-pointer ${className}`}
+      className={`w-11 h-11 bg-dark-hover text-3xl text-accent  rounded-md flex items-center justify-center cursor-pointer ${className}`}
     >
       {icons[type]}
     </button>
