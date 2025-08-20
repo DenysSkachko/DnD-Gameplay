@@ -10,6 +10,7 @@ const PrivateRoute = ({ children }: Props) => {
   const { account } = useAccount();
 
   if (!account) {
+    // Если нет залогиненного аккаунта, редирект на /login
     return <Navigate to="/auth" replace />;
   }
 
