@@ -1,0 +1,160 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-dark: #261e35;
+  --color-dark-hover: #372c44;
+  --color-light: #fff;
+  --color-accent: #ec5eb7;
+  --color-accent-hover: #535efc;
+  --color-main: #373737;
+  --color-alt: #d8bcff;
+}
+
+/* Inter Regular */
+@font-face {
+  font-family: 'Inter';
+  src: url('./assets/fonts/Inter_18pt-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Inter Medium */
+@font-face {
+  font-family: 'Inter';
+  src: url('./assets/fonts/Inter_18pt-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Inter SemiBold */
+@font-face {
+  font-family: 'Inter';
+  src: url('./assets/fonts/Inter_18pt-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Inter Bold */
+@font-face {
+  font-family: 'Inter';
+  src: url('./assets/fonts/Inter_18pt-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Inter ExtraBold */
+@font-face {
+  font-family: 'Inter';
+  src: url('./assets/fonts/Inter_18pt-Extrabold.ttf') format('truetype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+
+
+@font-face {
+  font-family: 'Bangers';
+  src: url('./assets/fonts/Bangers-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Raleway Regular */
+@font-face {
+  font-family: 'Raleway';
+  src: url('./assets/fonts/Raleway-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Raleway Medium */
+@font-face {
+  font-family: 'Raleway';
+  src: url('./assets/fonts/Raleway-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Raleway SemiBold */
+@font-face {
+  font-family: 'Raleway';
+  src: url('./assets/fonts/Raleway-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Raleway Bold */
+@font-face {
+  font-family: 'Raleway';
+  src: url('./assets/fonts/Raleway-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Raleway ExtraBold */
+@font-face {
+  font-family: 'Raleway';
+  src: url('./assets/fonts/Raleway-ExtraBold.ttf') format('truetype');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Raleway Black */
+@font-face {
+  font-family: 'Raleway';
+  src: url('./assets/fonts/Raleway-Black.ttf') format('truetype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+
+
+
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  display: flex;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: #242424;
+  font-family: 'Inter', sans-serif;
+}
+
+.bangers {
+  font-family: 'Bangers', cursive; 
+}
+
+/* src/styles/globals.css или любой ваш css файл */
+::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+* {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
