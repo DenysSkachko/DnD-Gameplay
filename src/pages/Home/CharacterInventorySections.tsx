@@ -23,6 +23,7 @@ const CharacterInventorySection = () => {
     editingIdx,
     setEditingIdx,
     newItem,
+    setNewItem,
     startAdd,
     cancelAdd,
     addNew,
@@ -32,8 +33,13 @@ const CharacterInventorySection = () => {
     data: inventory,
     emptyItem: { item_name: '', quantity: null, description: '', gold: null },
     stripKeys: ['id', 'character_id'],
-    createFn: (item) => createItem.mutateAsync(item as Omit<CharacterInventory, 'id' | 'character_id'>),
-    updateFn: (id, item) => updateItem.mutateAsync({ id, ...(item as Omit<CharacterInventory, 'id' | 'character_id'>) }),
+    createFn: (item) =>
+      createItem.mutateAsync(item as Omit<CharacterInventory, 'id' | 'character_id'>),
+    updateFn: (id, item) =>
+      updateItem.mutateAsync({
+        id,
+        ...(item as Omit<CharacterInventory, 'id' | 'character_id'>),
+      }),
     deleteFn: (id) => deleteItem.mutateAsync(id),
   })
 
@@ -62,25 +68,37 @@ const CharacterInventorySection = () => {
         <div className="flex flex-col gap-2 border p-3 rounded-md">
           <Input
             label="Название предмета"
-            value={(newItem as any).item_name}
-            onChange={_e => (setLocalList as any)((prev: any) => prev)}
+            value={newItem.item_name}
+            onChange={(e) => setNewItem({ ...newItem, item_name: e.target.value })}
           />
           <Input
             type="number"
             label="Количество"
-            value={(newItem as any).quantity ?? 1}
-            onChange={e => Object.assign(newItem, { quantity: Number(e.target.value) })}
+            value={newItem.quantity ?? ''}
+            onChange={(e) =>
+              setNewItem({
+                ...newItem,
+                quantity: e.target.value === '' ? null : Number(e.target.value),
+              })
+            }
           />
           <Input
             type="number"
             label="Стоимость (Gold)"
-            value={(newItem as any).gold ?? 0}
-            onChange={e => Object.assign(newItem, { gold: Number(e.target.value) })}
+            value={newItem.gold ?? ''}
+            onChange={(e) =>
+              setNewItem({
+                ...newItem,
+                gold: e.target.value === '' ? null : Number(e.target.value),
+              })
+            }
           />
           <Input
             label="Описание"
-            value={(newItem as any).description || ''}
-            onChange={e => Object.assign(newItem, { description: e.target.value })}
+            value={newItem.description || ''}
+            onChange={(e) =>
+              setNewItem({ ...newItem, description: e.target.value })
+            }
           />
           <div className="flex gap-2">
             <ActionButton type="save" onClick={handleAddNew} />
@@ -97,10 +115,10 @@ const CharacterInventorySection = () => {
               {!isEditing ? (
                 <div className="flex justify-between items-center relative">
                   <InventoryCard
-                    name={(item as any).item_name}
-                    quantity={(item as any).quantity ?? 0}
-                    gold={(item as any).gold ?? 0}
-                    description={(item as any).description || ' '}
+                    name={item.item_name}
+                    quantity={item.quantity ?? 0}
+                    gold={item.gold ?? 0}
+                    description={item.description || ' '}
                     onEdit={() => setEditingIdx(idx)}
                   />
                 </div>
@@ -108,46 +126,63 @@ const CharacterInventorySection = () => {
                 <div className="flex flex-col gap-2">
                   <Input
                     label="Название предмета"
-                    value={(item as any).item_name}
-                    onChange={e => {
+                    value={item.item_name}
+                    onChange={(e) => {
                       const copy = [...localList]
-                      ;(copy[idx] as any).item_name = e.target.value
+                      copy[idx] = { ...item, item_name: e.target.value }
                       setLocalList(copy)
                     }}
                   />
                   <Input
                     type="number"
                     label="Количество"
-                    value={(item as any).quantity ?? 1}
-                    onChange={e => {
+                    value={item.quantity ?? ''}
+                    onChange={(e) => {
                       const copy = [...localList]
-                      ;(copy[idx] as any).quantity = Number(e.target.value)
+                      copy[idx] = {
+                        ...item,
+                        quantity:
+                          e.target.value === '' ? null : Number(e.target.value),
+                      }
                       setLocalList(copy)
                     }}
                   />
                   <Input
                     type="number"
                     label="Стоимость (Gold)"
-                    value={(item as any).gold ?? 0}
-                    onChange={e => {
+                    value={item.gold ?? ''}
+                    onChange={(e) => {
                       const copy = [...localList]
-                      ;(copy[idx] as any).gold = Number(e.target.value)
+                      copy[idx] = {
+                        ...item,
+                        gold:
+                          e.target.value === '' ? null : Number(e.target.value),
+                      }
                       setLocalList(copy)
                     }}
                   />
                   <Input
                     label="Описание"
-                    value={(item as any).description || ''}
-                    onChange={e => {
+                    value={item.description || ''}
+                    onChange={(e) => {
                       const copy = [...localList]
-                      ;(copy[idx] as any).description = e.target.value
+                      copy[idx] = { ...item, description: e.target.value }
                       setLocalList(copy)
                     }}
                   />
                   <div className="flex gap-2">
-                    <ActionButton type="save" onClick={() => handleSaveExisting(idx)} />
-                    <ActionButton type="delete" onClick={() => handleDeleteExisting(idx)} />
-                    <ActionButton type="cancel" onClick={() => setEditingIdx(null)} />
+                    <ActionButton
+                      type="save"
+                      onClick={() => handleSaveExisting(idx)}
+                    />
+                    <ActionButton
+                      type="delete"
+                      onClick={() => handleDeleteExisting(idx)}
+                    />
+                    <ActionButton
+                      type="cancel"
+                      onClick={() => setEditingIdx(null)}
+                    />
                   </div>
                 </div>
               )}

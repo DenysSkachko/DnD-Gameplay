@@ -29,6 +29,7 @@ const CharacterWeaponsSection = () => {
     editingIdx,
     setEditingIdx,
     newItem,
+    setNewItem,
     startAdd,
     cancelAdd,
     addNew,
@@ -44,7 +45,7 @@ const CharacterWeaponsSection = () => {
       use_proficiency: false,
     },
     stripKeys: ['id', 'character_id'],
-    createFn: item =>
+    createFn: (item) =>
       createWeapon.mutateAsync(
         item as Omit<CharacterWeapon, 'id' | 'character_id' | 'attack_bonus' | 'damage'>
       ),
@@ -53,14 +54,14 @@ const CharacterWeaponsSection = () => {
         id,
         ...(item as Omit<CharacterWeapon, 'id' | 'character_id' | 'attack_bonus' | 'damage'>),
       }),
-    deleteFn: id => deleteWeapon.mutateAsync(id),
+    deleteFn: (id) => deleteWeapon.mutateAsync(id),
   })
 
   if (isLoading) return <p>Loading weapons...</p>
 
   const statOptions = stats
     ? Object.keys(stats).filter(
-        k => k !== 'id' && k !== 'character_id' && k !== 'proficiency_bonus'
+        (k) => k !== 'id' && k !== 'character_id' && k !== 'proficiency_bonus'
       )
     : []
 
@@ -98,30 +99,35 @@ const CharacterWeaponsSection = () => {
         <div className="flex flex-col gap-2 border p-3 rounded-md">
           <Input
             label="Name"
-            value={(newItem as any).name}
-            onChange={e => Object.assign(newItem, { name: e.target.value })}
+            value={newItem.name}
+            onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
           />
           <Select
             label="Damage Dice"
-            value={(newItem as any).damage_dice}
+            value={newItem.damage_dice}
             options={diceOptions}
-            onChange={val => Object.assign(newItem, { damage_dice: val })}
+            onChange={(val) => setNewItem({ ...newItem, damage_dice: val })}
           />
           <Select
             label="Damage Stat"
-            value={(newItem as any).damage_stat}
+            value={newItem.damage_stat}
             options={statOptions}
-            onChange={val => Object.assign(newItem, { damage_stat: val })}
+            onChange={(val) => setNewItem({ ...newItem, damage_stat: val })}
           />
           <Input
             label="Extra Damage"
             type="number"
-            value={(newItem as any).extra_damage}
-            onChange={e => Object.assign(newItem, { extra_damage: Number(e.target.value) })}
+            value={newItem.extra_damage ?? ''}
+            onChange={(e) =>
+              setNewItem({
+                ...newItem,
+                extra_damage: e.target.value === '' ? null : Number(e.target.value),
+              })
+            }
           />
           <Checkbox
-            checked={(newItem as any).use_proficiency}
-            onChange={val => Object.assign(newItem, { use_proficiency: val })}
+            checked={newItem.use_proficiency}
+            onChange={(val) => setNewItem({ ...newItem, use_proficiency: val })}
             label="Add proficiency bonus"
           />
           <div className="flex gap-2">
@@ -140,7 +146,7 @@ const CharacterWeaponsSection = () => {
               {!isEditing ? (
                 <div className="flex justify-between items-center relative">
                   <WeaponCard
-                    name={(w as any).name}
+                    name={w.name}
                     damage={damage}
                     attack_bonus={attack_bonus}
                     onEdit={() => setEditingIdx(idx)}
@@ -150,48 +156,52 @@ const CharacterWeaponsSection = () => {
                 <div className="flex flex-col gap-2">
                   <Input
                     label="Name"
-                    value={(w as any).name}
-                    onChange={e => {
+                    value={w.name}
+                    onChange={(e) => {
                       const copy = [...localList]
-                      ;(copy[idx] as any).name = e.target.value
+                      copy[idx] = { ...w, name: e.target.value }
                       setLocalList(copy)
                     }}
                   />
                   <Select
                     label="Damage Dice"
-                    value={(w as any).damage_dice}
+                    value={w.damage_dice}
                     options={diceOptions}
-                    onChange={val => {
+                    onChange={(val) => {
                       const copy = [...localList]
-                      ;(copy[idx] as any).damage_dice = val
+                      copy[idx] = { ...w, damage_dice: val }
                       setLocalList(copy)
                     }}
                   />
                   <Select
                     label="Damage Stat"
-                    value={(w as any).damage_stat}
+                    value={w.damage_stat}
                     options={statOptions}
-                    onChange={val => {
+                    onChange={(val) => {
                       const copy = [...localList]
-                      ;(copy[idx] as any).damage_stat = val
+                      copy[idx] = { ...w, damage_stat: val }
                       setLocalList(copy)
                     }}
                   />
                   <Input
                     label="Extra Damage"
                     type="number"
-                    value={(w as any).extra_damage}
-                    onChange={e => {
+                    value={w.extra_damage ?? ''}
+                    onChange={(e) => {
                       const copy = [...localList]
-                      ;(copy[idx] as any).extra_damage = Number(e.target.value)
+                      copy[idx] = {
+                        ...w,
+                        extra_damage:
+                          e.target.value === '' ? null : Number(e.target.value),
+                      }
                       setLocalList(copy)
                     }}
                   />
                   <Checkbox
-                    checked={(w as any).use_proficiency}
-                    onChange={val => {
+                    checked={w.use_proficiency}
+                    onChange={(val) => {
                       const copy = [...localList]
-                      ;(copy[idx] as any).use_proficiency = val
+                      copy[idx] = { ...w, use_proficiency: val }
                       setLocalList(copy)
                     }}
                     label="Add proficiency bonus"
