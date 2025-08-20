@@ -1,5 +1,3 @@
-import { useState } from 'react'
-import ActionButton from '@/ui/ActionButton'
 import { FaCoins } from "react-icons/fa6";
 type Props = {
   name: string
